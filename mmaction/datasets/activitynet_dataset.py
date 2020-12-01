@@ -73,8 +73,9 @@ class ActivityNetDataset(BaseDataset):
             Default: False.
     """
 
-    def __init__(self, ann_file, pipeline, data_prefix=None, test_mode=False):
+    def __init__(self, ann_file, pipeline, activity_index_file, data_prefix=None, test_mode=False):
         super().__init__(ann_file, pipeline, data_prefix, test_mode)
+        self.activity_index_file = activity_index_file
 
     def load_annotations(self):
         """Load the annotation according to ann_file into video_infos."""
@@ -183,18 +184,14 @@ class ActivityNetDataset(BaseDataset):
                 video_idx = 0
 
                 out_classifier_input = open(
-                    self.ann_file.replace(
-                        osp.split(self.ann_file)[1],
-                        'anet_val_classifier_input.txt'), 'w')
+                    self.ann_file.replace(osp.split(self.ann_file)[1],
+                                          'anet_val_classifier_input.txt'),
+                    'w')
                 # The activity index file is constructed according to
                 # 'https://github.com/activitynet/ActivityNet/blob/master/Evaluation/eval_classification.py'
                 activity_index, class_idx = {}, 0
-                with open(
-                        self.ann_file.replace(
-                            osp.split(self.ann_file)[1],
-                            'anet_activity_indexes_val.txt')
-                ) as activity_index_file:
-                    for line in activity_index_file.readlines():
+                with open(self.activity_index_file) as f_activity_index:
+                    for line in f_activity_index.readlines():
                         activity_index[line.strip()] = class_idx
                         class_idx += 1
 
@@ -203,7 +200,8 @@ class ActivityNetDataset(BaseDataset):
 
                 anno_database = mmcv.load(self.ann_file)
                 for video in videos:
-                    num_frames = anno_database['v_' + video]['duration_frame']
+                    num_frames = anno_database['v_' +
+                                                   video]['duration_frame']
                     fps = anno_database['v_' + video]['fps']
                     tiou, t_overlap = pairwise_temporal_iou(
                         proposal[video][:, :2].astype(float),
